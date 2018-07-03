@@ -14,15 +14,13 @@
  *
  */
 metadata {
-	definition (name: "iVirtual Garage Door", namespace: "induprakash", author: "Indu Prakash") {
+	definition (name: "XIP Virtual Garage Door", namespace: "induprakash", author: "Indu Prakash") {
 		//http://docs.smartthings.com/en/latest/capabilities-reference.html		
 		capability "Door Control"		//attributes=door(closed,closing,open,opening,unknown),commands=open,close
         capability "Garage Door Control"
 		//capability "Health Check"
-		capability "Refresh"	//commands=refresh		
-		capability "Switch"		//attributes=switch,commands=on,off
-        capability "Battery"
-		capability "Temperature Measurement"	//attributes=temperature
+		capability "Refresh"	//commands=refresh
+		capability "Switch"		//attributes=switch,commands=on,off		
 		capability "Sensor"
 
         command "finishOpening"		
@@ -187,15 +185,11 @@ private initialize() {
     //sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
 	//sendEvent(name: "healthStatus", value: "online")
 	//sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
-	sendEvent(name: "battery", value: "98", unit: "%")
-	sendEvent(name: "temperature", value: "76", unit: "F")
 }
 private List getStatus() {
 	def results = []
 	results << [name: "door", value: state.door]
 	results << [name: "status", value: state.door]
-	results << [name: "switch", value: state.switch]
-	results << [name: "battery", value: "98", unit: "%"]
-	results << [name: "temperature", value: "76", unit: "F"]
+	results << [name: "switch", value: state.switch]	
 	return results
 }

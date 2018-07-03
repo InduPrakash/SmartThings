@@ -1,8 +1,8 @@
 definition(
-	name: "iVirtual Garage Door",
+	name: "XIP Virtual Garage Door",
 	namespace: "induprakash",
 	author: "Indu Prakash",
-	description: "Syncs iVirtual Garage Door device with a contact sensor.",
+	description: "Syncs XIP Virtual Garage Door device with a contact sensor.",
 	category: "Convenience",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/doorbot.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/doorbot@2x.png")
