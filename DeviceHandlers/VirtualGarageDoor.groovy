@@ -17,11 +17,12 @@ metadata {
 	definition (name: "XIP Virtual Garage Door", namespace: "induprakash", author: "Indu Prakash") {
 		//http://docs.smartthings.com/en/latest/capabilities-reference.html		
 		capability "Door Control"		//attributes=door(closed,closing,open,opening,unknown),commands=open,close
-        capability "Garage Door Control"
-		//capability "Health Check"
+        capability "Garage Door Control"		
 		capability "Refresh"	//commands=refresh
 		capability "Switch"		//attributes=switch,commands=on,off		
 		capability "Sensor"
+		capability "Temperature Measurement"	//attributes=temperature
+		//capability "Health Check"
 
         command "finishOpening"		
         command "finishClosing"
