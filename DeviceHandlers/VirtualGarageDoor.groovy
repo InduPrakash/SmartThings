@@ -14,16 +14,15 @@
  *
  */
 metadata {
-	definition (name: "XIP Virtual Garage Door", namespace: "induprakash", author: "Indu Prakash") {
+	definition (name: "XIP Virtual Garage Door v1", namespace: "induprakash", author: "Indu Prakash") {
 		//http://docs.smartthings.com/en/latest/capabilities-reference.html		
-		capability "Door Control"		//attributes=door(closed,closing,open,opening,unknown),commands=open,close
-        capability "Garage Door Control"		
-		capability "Refresh"	//commands=refresh
-		capability "Switch"		//attributes=switch,commands=on,off		
-		capability "Sensor"
-		capability "Temperature Measurement"	//attributes=temperature
-		//capability "Health Check"
-
+		capability "Actuator"
+        capability "Door Control"		//attributes=door(closed,closing,open,opening,unknown),commands=open,close
+        capability "Garage Door Control"
+        capability "Refresh"	//commands=refresh		
+		capability "Sensor"	
+        capability "Switch"		//attributes=switch,commands=on,off		
+		
         command "finishOpening"		
         command "finishClosing"
 		command "actuate"
@@ -37,6 +36,7 @@ metadata {
 			//Dynamic device state values like '${currentValue}' and '${name}' must be used inside single quotes. This is in contrast to
 			//Groovy’s string interpolation that requires double quotes.
 			//action can be "<capability>.<command>" or "on"
+			state("unknown", label:'${name}', action:"refresh", icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e")
 			state("closed", label:'${name}', action:"open", icon:"st.doors.garage.garage-closed", backgroundColor:"#00A0DC", nextState:"opening")
 			state("open", label:'${name}', action:"close", icon:"st.doors.garage.garage-open", backgroundColor:"#e86d13", nextState:"closing")
 			state("opening", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#e86d13")
@@ -49,41 +49,43 @@ metadata {
 		standardTile("close", "device.door", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'close', action:"close", icon:"st.doors.garage.garage-closing"
 		}
+       	standardTile("refresh", "device.door", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:'', action:"refresh", icon:"st.secondary.refresh"
+		}
 
-		main "toggle"
+    	main "toggle"
 		details(["toggle", "open", "close"])
 	}
-
-	//preferences {		
-	//	input "finishDelay", "number", title: "Seconds", description: "Seconds after which opening/closing is considered finished", range: "*1..*", displayDuringSetup: false, defaultValue: 0
-	//}
+    
+    preferences { 
+		input "debugLogging", "boolean", 
+		title: "Enable debug logging?",
+		defaultValue: false,
+		displayDuringSetup: true
+	}
 }
 
 // parse events into attributes
 def parse(String description) {
-	log.debug "parse($description)"
+	logDebug "parse($description)"
 	return getStatus()
 }
 
 // handle commands
 def open() {
 	def doorState = state.door
-	log.debug "open() door=$doorState"
+	logDebug "open() door=$doorState"
 
     if ((doorState == "open") || (doorState == "opening")) {
-    	log.debug "open() already open/opening"
+    	logDebug "open() already open/opening"
     }
     else if ((doorState == "closed") || (doorState == "unknown")){
-    	log.debug "open() opening"
+    	logDebug "open() opening"
     	actuate()        
     	updateStateAndSendEvent("door", "opening")
-        
-    	//if (finishDelay) {
-        //	runIn(finishDelay, finishOpening)
-        //}
     }
     else if (doorState == "closing") {
-    	log.debug "open() door closing, stopping and then opening"
+    	logDebug "open() door closing, stopping and then opening"
     	actuate()	//cancel closing
         state.door = "unknown"
     	sendEvent(name: "door", value: "opening")
@@ -93,22 +95,18 @@ def open() {
 
 def close() {
 	def doorState = state.door
-	log.debug "close() door=$doorState"
+	logDebug "close() door=$doorState"
 
     if ((doorState == "closed") || (doorState == "closing")) {
-    	log.debug "close() already closed/closing"
+    	logDebug "close() already closed/closing"
     }
     else if ((doorState == "open") || (doorState == "unknown")){
-    	log.debug "close() closing"
+    	logDebug "close() closing"
     	actuate()
-		updateStateAndSendEvent("door", "closing")        	
-
-    	//if (finishDelay) {
-        //	runIn(finishDelay, finishClosing)
-        //}
+		updateStateAndSendEvent("door", "closing")
     }
     else if (doorState == "opening") {
-    	log.debug "close() door opening, stopping and then closing"
+    	logDebug "close() door opening, stopping and then closing"
     	actuate()	//cancel opening
         state.door = "unknown"
     	sendEvent(name: "door", value: "closing")
@@ -117,48 +115,50 @@ def close() {
 }
 
 def on() {
-	log.debug "on() Nothing done"
+	logDebug "on() Nothing done"
 }
 def off() {
-	log.debug "off() Nothing done"
+	logDebug "off() Nothing done"
 }
 
 def finishOpening() {
-	log.debug "finishOpening() switch=${device.currentValue("switch")}, door=${device.currentValue("door")}"
+	logDebug "finishOpening() switch=${device.currentValue("switch")}, door=${device.currentValue("door")}"
     finishActuate()
     updateStateAndSendEvent("door", "open")
 }
 def finishClosing() {
-    log.debug "finishClosing() switch=${device.currentValue("switch")}, door=${device.currentValue("door")}"
+    logDebug "finishClosing() switch=${device.currentValue("switch")}, door=${device.currentValue("door")}"
     finishActuate()
     updateStateAndSendEvent("door", "closed")
 }
 
 def actuate() {
-	log.debug "actuate()"
-	// Momentarily press the opener. Turns it on and then off after 1 second.
+	logDebug "actuate()"
+	// Momentarily press the opener.
 	def switchState = state.switch
     if (switchState != "on"){
-    	updateStateAndSendEvent("switch", "on")
-    	runIn(1, finishActuate)
+		delayBetween([
+			updateStateAndSendEvent("switch", "on"),
+			finishActuate()
+		], 500)
     }
 }
 
 
 def installed() {
-	log.debug "installed()"
+	logDebug "installed()"
 	initialize()
 }
 def updated() {
-	log.debug "updated()"
+	logDebug "updated()"
   	initialize()
 }
 def ping() {
-	log.debug "ping()"		//ping is used by Device-Watch in attempt to reach the Device
+	logDebug "ping()"		//ping is used by Device-Watch in attempt to reach the Device
     initialize()
 }
 def refresh() {
-	log.debug "refresh()"
+	logDebug "refresh()"
     initialize()
 }
 
@@ -169,23 +169,26 @@ def finishActuate() {
     }
 }
 
+private logDebug(String msg) {
+	if (state.debuggingEnabled) {
+    	log.debug (msg)
+    }
+}
 private updateStateAndSendEvent(String name, String value) {
-	log.debug "updateStateAndSendEvent() $name=$value"
+	logDebug "updateStateAndSendEvent() $name=$value"
 	state[name] = value
 	sendEvent(name: name, value: value)
 }
 private initialize() {
-	log.debug "initialize()"	
-   
+   	state.debuggingEnabled = (debugLogging == "true")    
+    logDebug "initialize()"	
+    
     state.door = "closed"
 	state.switch = "off"  
    
     sendEvent(name: "door", value: state.door)
 	sendEvent(name: "status", value: state.door)
-    sendEvent(name: "switch", value: state.switch)    
-    //sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
-	//sendEvent(name: "healthStatus", value: "online")
-	//sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+    sendEvent(name: "switch", value: state.switch)
 }
 private List getStatus() {
 	def results = []
