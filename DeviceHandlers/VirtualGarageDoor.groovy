@@ -14,18 +14,16 @@
  *
  */
 metadata {
-	definition (name: "XIP Virtual Garage Door v1", namespace: "induprakash", author: "Indu Prakash") {
+	definition (name: "XIP Virtual Garage Door", namespace: "induprakash", author: "Indu Prakash") {
 		//http://docs.smartthings.com/en/latest/capabilities-reference.html		
 		capability "Actuator"
         capability "Door Control"		//attributes=door(closed,closing,open,opening,unknown),commands=open,close
         capability "Garage Door Control"
         capability "Refresh"	//commands=refresh		
 		capability "Sensor"	
-        capability "Switch"		//attributes=switch,commands=on,off		
-		
-        command "finishOpening"		
-        command "finishClosing"
-		command "actuate"
+        capability "Switch"		//attributes=switch,commands=on,off        
+       
+        command "updateState"
 	}
 
 	simulator {	}
@@ -56,19 +54,29 @@ metadata {
     	main "toggle"
 		details(["toggle", "open", "close"])
 	}
-    
-    preferences { 
-		input "debugLogging", "boolean", 
-		title: "Enable debug logging?",
-		defaultValue: false,
-		displayDuringSetup: true
-	}
 }
 
 // parse events into attributes
 def parse(String description) {
 	logDebug "parse($description)"
+    if (description == "finishOpening") {
+    	finishOpening()
+    }
+    else if (description == "finishClosing") {
+    	finishClosing()
+    }
+    else if (description == "actuate") {
+    	actuate()
+    }
 	return getStatus()
+}
+
+def updateState(state) {
+	logDebug "updateState($state)"
+    if (state == "closed" || state == "open") {
+    	updateStateAndSendEvent("switch", "off")
+    }
+    updateStateAndSendEvent("door", state)
 }
 
 // handle commands
@@ -88,7 +96,6 @@ def open() {
     	logDebug "open() door closing, stopping and then opening"
     	actuate()	//cancel closing
         state.door = "unknown"
-    	sendEvent(name: "door", value: "opening")
         runIn(1, open)
     }
 }
@@ -109,41 +116,51 @@ def close() {
     	logDebug "close() door opening, stopping and then closing"
     	actuate()	//cancel opening
         state.door = "unknown"
-    	sendEvent(name: "door", value: "closing")
         runIn(1, close)
     }
 }
 
-def on() {
-	logDebug "on() Nothing done"
-}
-def off() {
-	logDebug "off() Nothing done"
-}
-
 def finishOpening() {
-	logDebug "finishOpening() switch=${device.currentValue("switch")}, door=${device.currentValue("door")}"
-    finishActuate()
-    updateStateAndSendEvent("door", "open")
+	updateState("open")
 }
 def finishClosing() {
-    logDebug "finishClosing() switch=${device.currentValue("switch")}, door=${device.currentValue("door")}"
-    finishActuate()
-    updateStateAndSendEvent("door", "closed")
+    updateState("closed")
 }
-
-def actuate() {
-	logDebug "actuate()"
-	// Momentarily press the opener.
+def actuate() {		// Momentarily press the opener.	
 	def switchState = state.switch
     if (switchState != "on"){
 		delayBetween([
 			updateStateAndSendEvent("switch", "on"),
-			finishActuate()
+			updateStateAndSendEvent("switch", "off")
 		], 500)
     }
 }
-
+def updateStateAndSendEvent(String name, String value) {
+	logDebug "updateStateAndSendEvent($name=$value)"
+	state[name] = value
+	sendEvent(name: name, value: value)
+}
+def logDebug(String msg) {	
+	log.debug (msg)
+}
+def initialize() {   	
+    logDebug "initialize()"    
+    state.door = "closed"
+	state.switch = "off"
+	sendStatus()
+}
+def List getStatus() {
+	def results = []
+	results << [name: "door", value: state.door]
+	results << [name: "status", value: state.door]
+	results << [name: "switch", value: state.switch]	
+	return results
+}
+def sendStatus() {
+    sendEvent(name: "door", value: state.door)
+	sendEvent(name: "status", value: state.door)
+    sendEvent(name: "switch", value: state.switch)
+}
 
 def installed() {
 	logDebug "installed()"
@@ -155,45 +172,9 @@ def updated() {
 }
 def ping() {
 	logDebug "ping()"		//ping is used by Device-Watch in attempt to reach the Device
-    initialize()
+    sendStatus()
 }
 def refresh() {
 	logDebug "refresh()"
-    initialize()
-}
-
-def finishActuate() {
-	def switchState = state.switch
-    if (switchState == "on"){
-    	updateStateAndSendEvent("switch", "off")
-    }
-}
-
-private logDebug(String msg) {
-	if (state.debuggingEnabled) {
-    	log.debug (msg)
-    }
-}
-private updateStateAndSendEvent(String name, String value) {
-	logDebug "updateStateAndSendEvent() $name=$value"
-	state[name] = value
-	sendEvent(name: name, value: value)
-}
-private initialize() {
-   	state.debuggingEnabled = (debugLogging == "true")    
-    logDebug "initialize()"	
-    
-    state.door = "closed"
-	state.switch = "off"  
-   
-    sendEvent(name: "door", value: state.door)
-	sendEvent(name: "status", value: state.door)
-    sendEvent(name: "switch", value: state.switch)
-}
-private List getStatus() {
-	def results = []
-	results << [name: "door", value: state.door]
-	results << [name: "status", value: state.door]
-	results << [name: "switch", value: state.switch]	
-	return results
+	sendStatus()
 }
