@@ -48,27 +48,38 @@ def initialize() {
 	}
 	else {
 		log.error("Unsupported virtual garage door, it has to be a XIP Virtual Garage Door device.")
-	}    
+	}
+    
+    runEvery5Minutes(updateVirtual)
 }
 def updateVirtual() {
 	def closedSensorCurrentValue = closedSensor.currentValue("contact")
     def openSensorCurrentValue = openSensor.currentValue("contact")
-    
+    def doorCurrentValue = virtualDoor.currentValue("door")
+    log.debug "updateVirtual() doorCurrentValue=$doorCurrentValue, closedSensor=$closedSensorCurrentValue, openSensor=$openSensorCurrentValue"
     if (closedSensorCurrentValue == "closed") {
     	if (openSensorCurrentValue == "closed") {
-        	trySendNotification("Both sensors reported closed, sensors might be malfunctioning.")
+        	notifyUsers("Both sensors reported closed, sensors might be malfunctioning.")
         }
 		virtualDoor.updateState("closed")
     }
-    if (closedSensorCurrentValue == "open") {
-    	//Door is opening or closing or midway, we can't tell. Treat the virtual door as open.
-		virtualDoor.updateState("open")
+	if (closedSensorCurrentValue == "open") {
+        if (openSensorCurrentValue == "closed") {
+        	virtualDoor.updateState("open")
+        }
+        else if (doorCurrentValue == "opening") {
+        	//Door is opening, don't change value
+        }
+        else {
+        	//Door could be partially open, start with "open" state.
+        	virtualDoor.updateState("open")
+        }
     }
 }
 
 def closedSensorHandler(evt) {
 	def doorCurrentValue = virtualDoor.currentValue("door")
-    log.debug "closedSensorHandler($evt.value) door=$doorCurrentValue}"
+    log.debug "closedSensorHandler($evt.value) door is $doorCurrentValue"
     if (evt.value == "open" && doorCurrentValue != "opening") {	//Garage door opened through the physical button        
         notifyUsers("Garage door manually opened.")
         virtualDoor.updateState("opening")
@@ -79,7 +90,7 @@ def closedSensorHandler(evt) {
 }
 def openSensorHandler(evt) {
 	def doorCurrentValue = virtualDoor.currentValue("door")
-	log.debug "openSensorHandler($evt.value) door=$doorCurrentValue}"
+	log.debug "openSensorHandler($evt.value) door is $doorCurrentValue"
     if (evt.value == "closed" && doorCurrentValue != "open") {
 		virtualDoor.updateState("open")
     }
@@ -100,29 +111,43 @@ def checkStatus(data) {
 	def doorCurrentValue = virtualDoor.currentValue("door")
     def openSensorCurrentValue = openSensor.currentValue("contact")
     def closedSensorCurrentValue = closedSensor.currentValue("contact")
-    log.debug "checkStatus() door=$doorCurrentValue closedSensor=$closedSensorCurrentValue openSensor=$openSensorCurrentValue"
+    log.debug "checkStatus() door=$doorCurrentValue, closedSensor=$closedSensorCurrentValue, openSensor=$openSensorCurrentValue"
 	
-	if (doorCurrentValue == "opening" && openSensorCurrentValue == "open") {        
-        if (closedSensorCurrentValue == "closed") {
-        	notifyUsers("Door failed to open and instead closed, opened at $data.doorActionAt.")
-            virtualDoor.updateState("closed")
+	if (doorCurrentValue == "opening") {
+    	if (openSensorCurrentValue == "open") {        
+            if (closedSensorCurrentValue == "closed") {
+                notifyUsers("Door failed to open and instead closed, opened at $data.doorActionAt.")
+                virtualDoor.updateState("closed")
+            }
+            else {
+                notifyUsers("Door failed to open, opened at $data.doorActionAt.")
+            }        
+		}
+        else if (openSensorCurrentValue == "closed") {
+        	//Door was quickly closed and opened, openSensor still reports closed. Treat door as open.
+            //This is also taken care of in recurring updateVirtual.
+        	virtualDoor.updateState("open")
         }
-        else {
-        	notifyUsers("Door failed to open, opened at $data.doorActionAt.")
-        }        
 	}	
-	if (doorCurrentValue == "closing" && closedSensorCurrentValue == "open") {
-    	if (openSensorCurrentValue == "closed") {
-        	notifyUsers("Door failed to close and instead opened, closed at $data.doorActionAt.")
-            virtualDoor.updateState("open")
+	if (doorCurrentValue == "closing") {
+    	if (closedSensorCurrentValue == "open") {
+    		if (openSensorCurrentValue == "closed") {
+        		notifyUsers("Door failed to close and instead opened, closed at $data.doorActionAt.")
+            	virtualDoor.updateState("open")
+        	}
+        	else {        	
+            	notifyUsers("Door failed to close, closed at $data.doorActionAt.")
+			}
         }
-        else {        	
-            notifyUsers("Door failed to close, closed at $data.doorActionAt.")
+        else if (closedSensorCurrentValue == "closed") {
+        	//Door was quickly opened and closed, closedSensor still reports closed. Treat door as closed.
+            //This is also taken care of in recurring updateVirtual.
+        	virtualDoor.updateState("closed")
         }
 	}
 }
 
-private notifyUsers(String msg) {
+def notifyUsers(String msg) {
 	log.debug "notifyUsers($msg)"
 	if (sendMsg != "No") {
 		sendPush(msg)
