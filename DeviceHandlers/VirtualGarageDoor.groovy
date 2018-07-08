@@ -73,16 +73,18 @@ def parse(String description) {
 
 def updateState(state) {
 	logDebug "updateState($state)"
-    if (state == "closed" || state == "open") {
-    	updateStateAndSendEvent("switch", "off")
-    }
-    updateStateAndSendEvent("door", state)
+    if (state) {
+    	if (state == "closed" || state == "open") {
+    		updateStateAndSendEvent("switch", "off")
+    	}
+    	updateStateAndSendEvent("door", state)
+	}       
 }
 
 // handle commands
 def open() {
 	def doorState = state.door
-	logDebug "open() door=$doorState"
+	logDebug "open() doorState=$doorState"
 
     if ((doorState == "open") || (doorState == "opening")) {
     	logDebug "open() already open/opening"
@@ -102,7 +104,7 @@ def open() {
 
 def close() {
 	def doorState = state.door
-	logDebug "close() door=$doorState"
+	logDebug "close() doorState=$doorState"
 
     if ((doorState == "closed") || (doorState == "closing")) {
     	logDebug "close() already closed/closing"
@@ -143,8 +145,7 @@ def updateStateAndSendEvent(String name, String value) {
 def logDebug(String msg) {	
 	log.debug (msg)
 }
-def initialize() {   	
-    logDebug "initialize()"    
+def initialize() {
     state.door = "closed"
 	state.switch = "off"
 	sendStatus()
