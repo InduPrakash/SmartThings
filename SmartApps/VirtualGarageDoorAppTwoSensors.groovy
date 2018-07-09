@@ -39,7 +39,6 @@ def updated() {
 }
 
 def initialize() {
-	log.debug "initialize()"
 	if (virtualDoor.hasCommand("updateState")) {
 		subscribe(virtualDoor, "door", doorHandler)
 		subscribe(closedSensor, "contact", closedSensorHandler)
@@ -50,7 +49,7 @@ def initialize() {
 		log.error("Unsupported virtual garage door, it has to be a XIP Virtual Garage Door device.")
 	}
     
-    runEvery5Minutes(updateVirtual)
+    //runEvery5Minutes(updateVirtual)
 }
 def updateVirtual() {
 	def closedSensorCurrentValue = closedSensor.currentValue("contact")
@@ -125,7 +124,6 @@ def checkStatus(data) {
 		}
         else if (openSensorCurrentValue == "closed") {
         	//Door was quickly closed and opened, openSensor still reports closed. Treat door as open.
-            //This is also taken care of in recurring updateVirtual.
         	virtualDoor.updateState("open")
         }
 	}	
@@ -141,7 +139,6 @@ def checkStatus(data) {
         }
         else if (closedSensorCurrentValue == "closed") {
         	//Door was quickly opened and closed, closedSensor still reports closed. Treat door as closed.
-            //This is also taken care of in recurring updateVirtual.
         	virtualDoor.updateState("closed")
         }
 	}

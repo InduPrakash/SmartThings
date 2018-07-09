@@ -87,7 +87,7 @@ def open() {
 	logDebug "open() doorState=$doorState"
 
     if ((doorState == "open") || (doorState == "opening")) {
-    	logDebug "open() already open/opening"
+    	//logDebug "open() already open/opening"
     }
     else if ((doorState == "closed") || (doorState == "unknown")){
     	logDebug "open() opening"
@@ -95,7 +95,7 @@ def open() {
     	updateStateAndSendEvent("door", "opening")
     }
     else if (doorState == "closing") {
-    	logDebug "open() door closing, stopping and then opening"
+    	logDebug "open() door closing, stopping and then opening in 1 sec"
     	actuate()	//cancel closing
         state.door = "unknown"
         runIn(1, open)
@@ -115,7 +115,7 @@ def close() {
 		updateStateAndSendEvent("door", "closing")
     }
     else if (doorState == "opening") {
-    	logDebug "close() door opening, stopping and then closing"
+    	logDebug "close() door opening, stopping and then closing in 1 sec"
     	actuate()	//cancel opening
         state.door = "unknown"
         runIn(1, close)
@@ -138,7 +138,7 @@ def actuate() {		// Momentarily press the opener.
     }
 }
 def updateStateAndSendEvent(String name, String value) {
-	logDebug "updateStateAndSendEvent($name=$value)"
+	//logDebug "updateStateAndSendEvent($name=$value)"
 	state[name] = value
 	sendEvent(name: name, value: value)
 }
