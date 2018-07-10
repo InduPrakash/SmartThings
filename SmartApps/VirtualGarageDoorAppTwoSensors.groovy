@@ -32,7 +32,7 @@ def installed() {
 	initialize()
 }
 def updated() {
-	log.debug "updated()"
+	//log.debug "updated()"
 	unsubscribe()
 	unschedule()
 	initialize()

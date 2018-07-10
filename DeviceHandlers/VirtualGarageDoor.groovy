@@ -84,10 +84,10 @@ def updateState(state) {
 // handle commands
 def open() {
 	def doorState = state.door
-	logDebug "open() doorState=$doorState"
+	//logDebug "open() doorState=$doorState"
 
     if ((doorState == "open") || (doorState == "opening")) {
-    	//logDebug "open() already open/opening"
+    	logDebug "open() already open/opening"
     }
     else if ((doorState == "closed") || (doorState == "unknown")){
     	logDebug "open() opening"
@@ -95,7 +95,7 @@ def open() {
     	updateStateAndSendEvent("door", "opening")
     }
     else if (doorState == "closing") {
-    	logDebug "open() door closing, stopping and then opening in 1 sec"
+    	logDebug "open() door closing, stopping and then opening"
     	actuate()	//cancel closing
         state.door = "unknown"
         runIn(1, open)
@@ -104,7 +104,7 @@ def open() {
 
 def close() {
 	def doorState = state.door
-	logDebug "close() doorState=$doorState"
+	//logDebug "close() doorState=$doorState"
 
     if ((doorState == "closed") || (doorState == "closing")) {
     	logDebug "close() already closed/closing"
@@ -115,7 +115,7 @@ def close() {
 		updateStateAndSendEvent("door", "closing")
     }
     else if (doorState == "opening") {
-    	logDebug "close() door opening, stopping and then closing in 1 sec"
+    	logDebug "close() door opening, stopping and then closing"
     	actuate()	//cancel opening
         state.door = "unknown"
         runIn(1, close)
