@@ -1,28 +1,27 @@
-# Virtual Garage Door
-There are many good virtual garage door controllers available but they lacked technical details or were just too complicated for me. I could not get them working with the standard push openers.
+# Garage Door Controller
 
-One additional caveat was that my physical opener device was interfaced through [SmartThings MQTT Bridge](https://github.com/stjohnjohnson/smartthings-mqtt-bridge).
+Requirements and limitations
+* Control a standard garage door
+* Integrate with SmartThings
+* Use a ESP8266 device and SmartThings sensor (I had a spare Contact sensor)
 
-So I wrote my own set of device handler and app. This also gave me a chance to learn more about SmartThings structure.
+I found some virtual garage door controllers but just could not get them working with the standard push openers in my setup.
 
----
-## XIP Virtual Garage Door (Device Handler)
-This represents a virtual garage door controller. 
+I had  already interfaced some ESP8266 devices and exposed SmartThings devices to [HomeAssistant](https://www.home-assistant.io/) using [SmartThings MQTT Bridge](https://github.com/InduPrakash/smartthings-mqtt-bridge).
 
-It supports the following capabilities:
-* Door Control
-* Garage Door Control (this has been deprecated in favor of Door Control)
-* Refresh
-* Switch
-* Temperature
 
-And custom commands to interact with the SmartApp:
-* finishOpening() - sets door state=open
-* finishClosing() - sets door state=closed
-* actuate() - sends event(switch=on) and then event(switch=off) after 1 second.
+So, I wrote my own set of device handler and app. This also gave me a chance to learn more about SmartThings structure. 
 
-### Door Operation
-The standard push opener either opens/closes the door and the door goes through the states:
+
+<hr/>
+
+## SmartThings
+
+### Device Handler ([XIP Virtual Garage Door](https://github.com/InduPrakash/SmartThings/blob/master/DeviceHandlers/VirtualGarageDoor.groovy))
+This represents a virtual garage door device. The main capabilities which it implements are [Door Control](http://docs.smartthings.com/en/latest/capabilities-reference.html#door-control) and [Switch](http://docs.smartthings.com/en/latest/capabilities-reference.html#switch). It also exposes a custom command to allow interaction with the smart app.
+
+#### Door Operation
+The standard push opener either opens or closes the door:
 * closed -> opening -> open
 * open -> closing -> closed
 
@@ -40,26 +39,45 @@ These are the mapped operations:
     * if state=opening then actuate(), close() in 1 second
 
 
-## XIP Virtual Garage Door (Smart App)
-The app is the brains linking the physical sensor and the virtual device.
+### Smart App ([Two Sensors Garage Door Controller](https://github.com/InduPrakash/SmartThings/blob/master/SmartApps/VirtualGarageDoorAppTwoSensors.groovy))
+The app is the brains linking the physical sensors and the virtual device.
 
-It requires a
-* Contact sensor device - this would be the physical sensor.
+It requires:
+* Two contact sensor devices, one indicating completely opened state and the other closed state.
 * Virtual door device - this would be the XIP Virtual Garage Door device.
 
-And subscribes to contact and door messages on the above devices.
+It syncs the device, if the door was opened through the physical switch. If the door is opened through the app, then a verification check is done after a configurable amount of time.
 
 
-Messages:
-* When physical contact opens/closes
-    * Door has been opened by using physical switch or remote control or by the SmartApp, regardless sync the virtual door to be open or closed.
-* If the virtual door is opening or closing
-    * After a pre-defined interval, check if the door successfully closed or opened. Send a push notification in case of failure.
-
----
 ## Setup
 Log into [SmartThings Groovy IDE](https://graph.api.smartthings.com/).
 1. Go to My Device Handlers, click Create New Device Handler, use From Code and paste the [raw device handler code](https://raw.githubusercontent.com/InduPrakash/SmartThings/master/DeviceHandlers/VirtualGarageDoor.groovy). Save and Publish For Me.
 2. Go to My Devices, create a new device. Give it a Name, Device Network id, Type "XIP Virtual Garage Door", Version "Published" and Hub.
 3. Go to My SmartApps, click new SmartApp, use From Code and paste the [raw app code](https://raw.githubusercontent.com/InduPrakash/SmartThings/master/SmartApps/VirtualGarageDoorApp.groovy). Save and Publish For Me.
-4. Launch the Classic SmartThings mobile app, go to SmartApps, add a SmartApp. Scroll down to My Apps and select XIP Virtual Garage Door, pick a contact sensor and virtual garage door device and you are set.
+4. Launch the Classic SmartThings mobile app, go to SmartApps, add a SmartApp. Scroll down to My Apps and select XIP Virtual Garage Door, pick contact sensors and virtual garage door device and you are set.
+
+There are 3 devices involves - the XIP Virtual Garage Door based device and 2 contact sensors. My open sensor was actually a virtual device based on this [device handler](https://github.com/InduPrakash/SmartThings/blob/master/DeviceHandlers/ContactSensorCapability.groovy). This is why I had to modify the [SmartThings MQTT Bridge](https://github.com/InduPrakash/smartthings-mqtt-bridge).
+
+
+
+
+## ESP8266 (ESP-12E)
+The controller in my case was a ESP-12E module of [ESP8266](https://en.wikipedia.org/wiki/ESP8266) microchip. It has plenty of GPIO pins and is quite cost effective. It controls the garage opener and also acts as the open sensor. It is flashed with a custom [Espurna based firmware](https://github.com/InduPrakash/espurna/tree/button).
+
+* The controller subscribes to "smartthings/[SmartThings Device Name]/switch" topic to activate the relay connected to the garage switch.
+* It also sends out a message to "smartthings/[Open Sensor Device Name]/contact" topic when the physical magnetic contact switch is activated.
+
+
+<hr/>
+
+## The Complete Picture
+On the SmartThings end, there is a XIP Virtual Garage Door device and an open
+
+* ST app -> turns the switch "on" and then "off"
+    * MQTT Bridge converts these into MQTT messages
+        * Espurna device activates the garage door
+    
+* Door completely open -> sensor triggered -> a MQTT message sent out
+    * MQTT Bridge converts the message into an event on ST device
+        * ST app receives the event and updates the virtual device.
+
