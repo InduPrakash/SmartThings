@@ -1,8 +1,23 @@
+/**
+ *  Two Sensors Garage Door Controller
+ *
+ *  Copyright 2018 Indu Prakash
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ */
 definition(
-	name: "Virtual Garage Door Two Sensors",
+	name: "Two Sensors Garage Door Controller",
 	namespace: "induprakash",
 	author: "Indu Prakash",
-	description: "Syncs XIP Virtual Garage Door device with two contact sensors.",
+	description: "Controls a XIP Virtual Garage Door device with two contact sensors.",
 	category: "Convenience",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/garage_contact.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/garage_contact@2x.png")
@@ -21,9 +36,10 @@ preferences {
 		input "checkAfter", "number", title: "Operation Check Delay?", required: false, defaultValue: 20
 	}
 	section("Notifications") {
-		input("recipients", "contact", title: "Send notifications to") {
-			input "sendMsg", "enum", title: "Send notification?", options: ["Yes", "No"], required: false, defaultValue: 1
-		}
+		input "sendMsg", "boolean", title: "Send notification?", defaultValue: false, displayDuringSetup: true
+	}
+	section("Logging") {
+		input "debugLogging", "boolean", title: "Enable debug logging?", defaultValue: false, displayDuringSetup: true
 	}
 }
 
@@ -32,7 +48,6 @@ def installed() {
 	initialize()
 }
 def updated() {
-	//log.debug "updated()"
 	unsubscribe()
 	unschedule()
 	initialize()
@@ -55,7 +70,7 @@ def updateVirtual() {
 	def closedSensorCurrentValue = closedSensor.currentValue("contact")
     def openSensorCurrentValue = openSensor.currentValue("contact")
     def doorCurrentValue = virtualDoor.currentValue("door")
-    log.debug "updateVirtual() doorCurrentValue=$doorCurrentValue, closedSensor=$closedSensorCurrentValue, openSensor=$openSensorCurrentValue"
+    logDebug "updateVirtual() doorCurrentValue=$doorCurrentValue, closedSensor=$closedSensorCurrentValue, openSensor=$openSensorCurrentValue"
     if (closedSensorCurrentValue == "closed") {
     	if (openSensorCurrentValue == "closed") {
         	notifyUsers("Both sensors reported closed, sensors might be malfunctioning.")
@@ -78,7 +93,7 @@ def updateVirtual() {
 
 def closedSensorHandler(evt) {
 	def doorCurrentValue = virtualDoor.currentValue("door")
-    log.debug "closedSensorHandler($evt.value) door is $doorCurrentValue"
+    logDebug "closedSensorHandler($evt.value) door is $doorCurrentValue"
     if (evt.value == "open" && doorCurrentValue != "opening") {	//Garage door opened through the physical button        
         notifyUsers("Garage door manually opened.")
         virtualDoor.updateState("opening")
@@ -89,7 +104,7 @@ def closedSensorHandler(evt) {
 }
 def openSensorHandler(evt) {
 	def doorCurrentValue = virtualDoor.currentValue("door")
-	log.debug "openSensorHandler($evt.value) door is $doorCurrentValue"
+	logDebug "openSensorHandler($evt.value) door is $doorCurrentValue"
     if (evt.value == "closed" && doorCurrentValue != "open") {
 		virtualDoor.updateState("open")
     }
@@ -99,7 +114,7 @@ def openSensorHandler(evt) {
     }    
 }
 def doorHandler(evt) {
-	log.debug "doorHandler($evt.value)"    
+	logDebug "doorHandler($evt.value)"    
 	if (evt.value == "opening" || evt.value == "closing") {
 		if (checkAfter) {
 			runIn(checkAfter, checkStatus, [data: [doorActionAt: getFormattedTime(evt.date)]])	//the default behavior is to overwrite the pending schedule
@@ -110,7 +125,7 @@ def checkStatus(data) {
 	def doorCurrentValue = virtualDoor.currentValue("door")
     def openSensorCurrentValue = openSensor.currentValue("contact")
     def closedSensorCurrentValue = closedSensor.currentValue("contact")
-    log.debug "checkStatus() door=$doorCurrentValue, closedSensor=$closedSensorCurrentValue, openSensor=$openSensorCurrentValue"
+    logDebug "checkStatus() door=$doorCurrentValue, closedSensor=$closedSensorCurrentValue, openSensor=$openSensorCurrentValue"
 	
 	if (doorCurrentValue == "opening") {
     	if (openSensorCurrentValue == "open") {        
@@ -145,8 +160,7 @@ def checkStatus(data) {
 }
 
 def notifyUsers(String msg) {
-	log.debug "notifyUsers($msg)"
-	if (sendMsg != "No") {
+	if (sendMsg) {
 		sendPush(msg)
 	}
 }
@@ -155,4 +169,9 @@ def String getFormattedTime(Date dt) {
 	def tz = location.getTimeZone()
     if (!tz) { tz = TimeZone.getTimeZone("CST") }
     return dt.format('h:mm a', tz)
+}
+def logDebug(String msg) {	
+	if (debugLogging) {
+		log.debug (msg)
+	}
 }

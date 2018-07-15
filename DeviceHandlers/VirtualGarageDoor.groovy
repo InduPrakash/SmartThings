@@ -1,5 +1,5 @@
 /**
- *  My Virtual Garage Door
+ *  XIP Virtual Garage Door
  *
  *  Copyright 2018 Indu Prakash
  *
@@ -49,10 +49,12 @@ metadata {
 		}
        	standardTile("refresh", "device.door", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh", icon:"st.secondary.refresh"
-		}
+		}        
+        
+		input "debugLogging", "boolean", title: "Enable debug logging?", defaultValue: false, displayDuringSetup: true
 
     	main "toggle"
-		details(["toggle", "open", "close"])
+		details(["toggle", "open", "close", "refresh"])
 	}
 }
 
@@ -83,8 +85,7 @@ def updateState(state) {
 
 // handle commands
 def open() {
-	def doorState = state.door
-	//logDebug "open() doorState=$doorState"
+	def doorState = state.door	
 
     if ((doorState == "open") || (doorState == "opening")) {
     	logDebug "open() already open/opening"
@@ -103,8 +104,7 @@ def open() {
 }
 
 def close() {
-	def doorState = state.door
-	//logDebug "close() doorState=$doorState"
+	def doorState = state.door	
 
     if ((doorState == "closed") || (doorState == "closing")) {
     	logDebug "close() already closed/closing"
@@ -137,13 +137,14 @@ def actuate() {		// Momentarily press the opener.
 		], 500)
     }
 }
-def updateStateAndSendEvent(String name, String value) {
-	//logDebug "updateStateAndSendEvent($name=$value)"
+def updateStateAndSendEvent(String name, String value) {	
 	state[name] = value
 	sendEvent(name: name, value: value)
 }
 def logDebug(String msg) {	
-	log.debug (msg)
+	if (debugLogging) {
+		log.debug (msg)
+	}
 }
 def initialize() {
     state.door = "closed"
