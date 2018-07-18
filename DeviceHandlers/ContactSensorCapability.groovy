@@ -14,17 +14,17 @@
  *
  */
 metadata {
-	definition (name: "XIP Contact Sensor Capability", namespace: "induprakash", author: "Indu Prakash") {
+	definition(name: "XIP Contact Sensor Capability", namespace: "induprakash", author: "Indu Prakash") {
 		capability "Contact Sensor"
-
+		capability "Health Check"
 		command "open"
 		command "close"
 	}
 
 	tiles {
 		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC")
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
+			state("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
+			state("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
 		}
 		main "contact"
 		details "contact"
@@ -41,5 +41,17 @@ def open() {
 	sendEvent(name: "contact", value: "open")
 }
 def close() {
-    sendEvent(name: "contact", value: "closed")
+	sendEvent(name: "contact", value: "closed")
+}
+
+def installed() {
+	initialize()
+}
+def updated() {
+	initialize()
+}
+def initialize() {
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme: "untracked"].encodeAsJson(), displayed: false)
 }
