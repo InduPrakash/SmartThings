@@ -5,6 +5,13 @@ Requirements and limitations
 * Integrate with SmartThings
 * Use a ESP8266 device and SmartThings sensor (I had a spare Contact sensor)
 
+Features
+* Open/close the garage
+* Check if opening/closing succeeded, notify if operation failed
+* Notify if garage was manually closed/opened
+* Handle commands while opening/closing was already taking place
+* Logging
+
 I found some virtual garage door controllers but just could not get them working with the standard push openers in my setup.
 
 I had  already interfaced some ESP8266 devices and exposed SmartThings devices to [HomeAssistant](https://www.home-assistant.io/) using [SmartThings MQTT Bridge](https://github.com/InduPrakash/smartthings-mqtt-bridge).
@@ -39,7 +46,7 @@ These are the mapped operations:
     * if state=opening then actuate(), close() in 1 second
 
 
-### Smart App ([Two Sensors Garage Door Controller](https://github.com/InduPrakash/SmartThings/blob/master/SmartApps/VirtualGarageDoorAppTwoSensors.groovy))
+### Smart App ([Two Sensor Garage Door Controller](https://github.com/InduPrakash/SmartThings/blob/master/SmartApps/VirtualGarageDoorAppTwoSensors.groovy))
 The app is the brains linking the physical sensors and the virtual device.
 
 It requires:
