@@ -6,7 +6,7 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *	  http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -14,54 +14,52 @@
  *
  */
 definition(
-    name: "Notifier",
-    namespace: "induprakash",
-    author: "Indu Prakash",
-    description: "Allows a device to send push message.",
-    category: "Convenience",
-	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/window_contact.png",
-	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/window_contact@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Meta/window_contact@2x.png")
+	name: "Notifier",
+	namespace: "induprakash",
+	author: "Indu Prakash",
+	description: "Display notification in SmartThings mobile app from device.",
+	category: "Convenience",
+	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-NotifyWhenNotHere.png",
+	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-NotifyWhenNotHere@2x.png",
+	iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-NotifyWhenNotHere@2x.png")
 
 preferences {
-	section("Device with 'notify' attribute:") {
-		input "source", "capability.sensor", title: "Device?", required: true
+	section("Devices") {
+		input "sources", "capability.sensor", title: "Devices to monitor?", required: true, multiple: true
 	}
-	section() {
+	section("Operation") {
 		input "sendMsg", "boolean", title: "Send notification?", defaultValue: true, displayDuringSetup: true
-        input "debugLogging", "boolean", title: "Enable logging?", defaultValue: false, displayDuringSetup: false
 	}
 }
 
 //Public
 def installed() {
-    logDebug "Installed Notifier"
-    initialize()
-}
-def updated() {
-	logDebug "Updated Notifier"
-    unsubscribe()
 	initialize()
 }
-def initialize() {	
-	if (source.hasAttribute("notify")) {
-		subscribe(source, "notify", notificationHandler)
-    }
-	else {
-		log.error("Unsupported device, it does not have 'notify' attribute.")
+def updated() {
+	unsubscribe()
+	initialize()
+}
+private initialize() {
+	//subscribe(sources, "notify", notificationHandler)
+	sources.each { source ->
+		if (source.hasAttribute("notify")) {
+			log.info "Subscribed ${source}"
+			subscribe(source, "notify", notificationHandler)
+		}
+		else {
+			log.warn("Unsupported device ${source}, it does not have 'notify' attribute.")
+		}
 	}
 }
 
-//Event handler need to be public
+/**
+ * 'notify' event handler.
+ */
 def notificationHandler(evt) {
-    logDebug "Received ${evt.name} ${evt.value}"    
-    
-    if (sendMsg) {
-		sendPush("${evt.value}")
-	}
-}
-def logDebug(String msg) {
-    if (debugLogging) {
-		log.debug(msg)
+	log.info "Received ${evt.displayName} ${evt.value}"
+	if (sendMsg) {
+		//sendNotification() method allows you to send both push and/or SMS messages, in one convenient method call. It can also optionally display the message in the Notifications feed.
+		sendNotification("${evt.displayName}: ${evt.value}")
 	}
 }
