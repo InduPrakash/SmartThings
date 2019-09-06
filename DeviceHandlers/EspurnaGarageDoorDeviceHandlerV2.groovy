@@ -92,7 +92,7 @@ metadata {
 	preferences{
 		//Setting a default value (defaultValue: "foobar") for an input may render that selection in the mobile app, but the user still needs to enter data in that field. It’s recommended to not use defaultValue to avoid confusion.
 		input "ipAddress", "text", title: "Garage Controller's IP Address", description: "IP address of the Espurna device", displayDuringSetup: true
-		input "apiKey", "text", title: "Garage Controller's API Key", displayDuringSetup: true
+		input "apiKey", "text", title: "Garage Controller's API Key", description: "HTTP API key", displayDuringSetup: true
 		input "debugLogging", "boolean", title: "Enable logging?", defaultValue: false, displayDuringSetup: false
 	}
 }
@@ -143,9 +143,6 @@ def setStatus(type, value) {
 }
 
 def fetchCallback(physicalgraph.device.HubResponse hubResponse) {
-	//logDebug "fetchCallback()...${hubResponse.json}"
-	//logDebug "fetchCallback()...${hubResponse.body}"
-	
 	//Callback result contains state/opensensorPressed/closedsensorPressed
 	def splitted = hubResponse.body?.split("/")
 	if (splitted?.size() == 3) {
@@ -192,18 +189,19 @@ def fetchCallback(physicalgraph.device.HubResponse hubResponse) {
  * Fetch status from the device. This gets calls from a timer as well.
  */
 def fetchStatus() {
-	def hubAction = new physicalgraph.device.HubAction(
-		method: "GET",
-		path:  "/api/door?apikey=${apiKey}",
-		headers: [
-			HOST: "${ipAddress}:80",
-			//Accept: "application/json",
-		],		
-		null,
-		[callback: fetchCallback]
-	)
-	logDebug "fetchStatus"
-	sendHubCommand(hubAction)	
+	if (apiKey && ipAddress) {
+		def hubAction = new physicalgraph.device.HubAction(
+			method: "GET",
+			path:  "/api/door?apikey=${apiKey}",
+			headers: [
+				HOST: "${ipAddress}:80"
+			],
+			null,
+			[callback: fetchCallback]
+		)
+		logDebug "fetchStatus"
+		sendHubCommand(hubAction)
+	}
 	
 	//Fetch status again every 60 seconds
 	runIn(60, fetchStatus)
@@ -216,7 +214,7 @@ private openClose(value){
 		path:  "/api/door?apikey=${apiKey}&value=${value}",
 		headers: [
 			HOST: "${ipAddress}:80"
-		],		
+		],
 		null,
 		[callback: fetchCallback]
 	)
@@ -253,47 +251,4 @@ def installed() {
 def updated() {
 	logDebug "Updating Garage Door"
 	initialize()
-}
-
-
-//NOT USED - Delete
-// gets the address of the Hub
-private getCallBackAddress() {
-	return device.hub.getDataValue("localIP") + ":" + device.hub.getDataValue("localSrvPortTCP")
-}
-def someCommand() {
-	subscribeAction("/path/of/event")
-}
-private subscribeAction(path, callbackPath="") {
-	log.trace "subscribe($path, $callbackPath)"
-	def address = getCallBackAddress()
-	def ip = getHostAddress()
-
-	def result = new physicalgraph.device.HubAction(
-		method: "SUBSCRIBE",
-		path: path,
-		headers: [
-			HOST: ${ipAddress},
-			CALLBACK: "<http://${address}/notify$callbackPath>",
-			NT: "upnp:event",
-			TIMEOUT: "Second-28800"
-		]
-	)
-
-	log.trace "SUBSCRIBE $path"
-	return result
-}
-def String getFormattedTime(Date dt) {
-	if (!dt) {
-		return ""
-	}
-	def tz = location.getTimeZone()
-	if (!tz) {
-		tz = TimeZone.getTimeZone("CST")
-	}
-	return dt.format('h:mm a', tz)
-}
-//Don't use sendNotification, it is a public method but devices cannot send notification
-def sendNotifyEvent(msg) {
-	sendEvent(name: "notify", value: msg, isStateChange: true, displayed: true)
 }
