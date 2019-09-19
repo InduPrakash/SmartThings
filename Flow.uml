@@ -1,0 +1,38 @@
+@startuml
+scale 1200 width
+
+state "Garage Opener" as SmartThings_Garage  {  
+  state "SmartThings Device Handler" as SmartThings_Garage_Device {
+    state "Open/Close" as SmartThings_Garage_Device_Operation: Mobile App
+    state "Callback" as SmartThings_Garage_Device_Update: Device
+    state "Scheduled Refresh" as SmartThings_Garage_Device_Scheduled: Device
+    state "setStatus" as SmartThings_Garage_Device_setStatus: Device
+    state "sendEvent" as SmartThings_Garage_Device_sendEvent: Device
+  }
+  state "SmartThings Notifier SmartApp" as SmartThings_Garage_Notifier_SmartApp: Notification on mobile app
+}
+
+state "Espurna (ESP12)" as ESP8266 {
+  state "API End Point" as ESP8266_API
+  state "Sensors" as ESP8266_Sensor: State change
+  state "Notification" as ESP8266_Notification
+}
+
+state "SmartThings MQTT Bridge" as MQTT_Bridge {
+  state "Node Server" as MQTT_Bridge_Server
+  state "SmartThings" as MQTT_Bridge_SmartApp: SmartApp
+
+}
+
+SmartThings_Garage_Device_Operation --> ESP8266_API
+SmartThings_Garage_Device_Scheduled --> ESP8266_API
+ESP8266_API --> SmartThings_Garage_Device_Update : API Response
+ESP8266_Sensor --> MQTT_Bridge_Server: MQTT
+ESP8266_Notification --> MQTT_Bridge_Server: MQTT
+MQTT_Bridge_Server -right-> MQTT_Bridge_SmartApp
+MQTT_Bridge_SmartApp --> SmartThings_Garage_Device_setStatus
+SmartThings_Garage_Device_setStatus --> SmartThings_Garage_Device_sendEvent
+SmartThings_Garage_Device_Update --> SmartThings_Garage_Device_setStatus
+
+SmartThings_Garage_Device_sendEvent -> SmartThings_Garage_Notifier_SmartApp: Attribute change
+@enduml
