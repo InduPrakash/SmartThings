@@ -55,7 +55,7 @@ metadata {
 			state "closing", label: 'Closing', icon: "st.doors.garage.garage-closing", backgroundColor: "#79b821"
 			state "moving", label: 'Moving', icon: "st.motion.motion.active", backgroundColor: "#ffdd00"
 			state "stopped", label: 'Stopped', icon: "st.contact.contact.open", backgroundColor: "#ffdd00"
-		}  
+		}
 		
 		standardTile("action", "device.door", width: 2, height: 2, canChangeIcon: true, canChangeBackground: true, decoration: "flat") { 
 			state "unknown", label: '', icon: "st.unknown.unknown.unknown", backgroundColor: "#afafaf", action: "refresh"
@@ -65,7 +65,7 @@ metadata {
 			state "closing", label: 'Closing', icon: "st.doors.garage.garage-closing", backgroundColor: "#79b821"
 			state "moving", label: 'Moving', icon: "st.motion.motion.active", backgroundColor: "#ffdd00", action: "refresh"
 			state "stopped", label: 'Stopped', icon: "st.contact.contact.open", backgroundColor: "#ffdd00", action: "close"
-		}   	
+		}
 		
 		standardTile("forceOpen", "", width: 2, height: 2, decoration: "flat") {
 			state "default", label: 'Force Open', action: "open", icon: "st.doors.garage.garage-opening"
@@ -74,12 +74,12 @@ metadata {
 			state "default", label: 'Force Close', action: "close", icon: "st.doors.garage.garage-closing"
 		}
 		
-	   	valueTile("temperature", "device.temperature", width: 2, height: 2, canChangeIcon: true) {
-			state "temperature", label:'${currentValue}°', icon: "st.Weather.weather2"				
-		}	   
+		valueTile("temperature", "device.temperature", width: 2, height: 2, canChangeIcon: true) {
+			state "temperature", label:'${currentValue}°', icon: "st.Weather.weather2"
+		}
 		valueTile("humidity", "device.humidity", width: 2, height: 2) {
 			state "humidity", label: '${currentValue}%', unit: "", icon: "st.Weather.weather12"
-		}			  
+		}
 		
 		standardTile("refresh", "", width: 2, height: 2, decoration: "flat") {
 			state "default", label: 'Refresh', action: "refresh.refresh", icon: "st.secondary.refresh"
@@ -107,7 +107,7 @@ def refresh() {
  * Command to open the door.
  */
 def open() {
-	openClose(1)	
+	openClose(1)
 }
 /**
  * Command to close the door.
@@ -119,7 +119,7 @@ def close() {
 /**
  * Invoked by MQTT Bridge.
  */
-def setStatus(type, value) {	
+def setStatus(type, value) {
 	log.info "setStatus($type,$value)"
 	
 	if (type == "door") {
@@ -139,7 +139,7 @@ def setStatus(type, value) {
 	}
 	else if (type == "notify") {
 		sendEvent(name: type, value: value, displayed: false)
-	}	
+	}
 }
 
 def fetchCallback(physicalgraph.device.HubResponse hubResponse) {
@@ -156,7 +156,7 @@ def fetchCallback(physicalgraph.device.HubResponse hubResponse) {
 				break
 			case "2":
 				stateValue = "closed"
-				break			   
+				break
 			case "3":
 				stateValue = "opening"
 				break
@@ -165,7 +165,7 @@ def fetchCallback(physicalgraph.device.HubResponse hubResponse) {
 				break
 			case "5":
 				stateValue = "stopped"
-				break			
+				break
 		}
 		
 		if (splitted[1] == "1") {
@@ -173,14 +173,14 @@ def fetchCallback(physicalgraph.device.HubResponse hubResponse) {
 		}
 		if (splitted[2] == "1") {
 			stateClosedSensor = "closed"
-		}	   
+		}
 		
 		log.info "fetchCallback door=${stateValue} openSensor=${stateOpenSensor} closedSensor=${stateClosedSensor}"
 		sendEvent(name: "door", value: stateValue)	
 		sendEvent(name: "opensensor", value: stateOpenSensor, displayed: false)
 		sendEvent(name: "closedsensor", value: stateClosedSensor, displayed: false)
 	}
-	   
+	
 	sendEvent(name: "healthStatus", value: "online", displayed: false)
 	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false)
 }
