@@ -26,7 +26,7 @@ http://docs.smartthings.com/en/latest/capabilities-reference.html
 metadata {
 	definition(
 		name: "Espurna Garage Door Device Handler V2", namespace: "induprakash", author: "Indu Prakash") {
-		capability "Door Control" //attribute=door,commands=open,close
+		capability "Garage Door Control"  //attributes=door(closed,closing,open,opening,unknown),commands=open,close
 		capability "Health Check"
 		capability "Sensor"
 		capability "Refresh"	//command=refresh
