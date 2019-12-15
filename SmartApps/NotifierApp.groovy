@@ -18,7 +18,7 @@ definition(
 	namespace: "induprakash",
 	author: "Indu Prakash",
 	description: "Display notification in SmartThings mobile app from device.",
-	category: "Convenience",
+	category: "My Apps",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-NotifyWhenNotHere.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-NotifyWhenNotHere@2x.png",
 	iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-NotifyWhenNotHere@2x.png")
