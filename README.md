@@ -1,16 +1,31 @@
-# Garage Door Controller
+# Espurna Garage Door Controller
 
-Requirements and limitations
-* Control a standard garage door
-* Integrate with SmartThings
-* Use a ESP8266 device and SmartThings sensor (I had a spare Contact sensor)
+This project implements a garage door opener controller based on a ESP8266 device interfaced through SmartThings.
 
-Features
-* Open/close the garage
-* Check if opening/closing succeeded, notify if operation failed
-* Notify if garage was manually closed/opened
-* Handle commands while opening/closing was already taking place
-* Logging
+
+# Features
+* Open/close the door
+* Verify opening/closing operation
+* Notifications about door operations
+* Temperature monitoring
+
+# The ESP8266 Device
+
+An ESP8266 device (ESP12 in my case) connects to the existing garage opener through a relay and receives input from 2 sensors (open sensor and closed sensor). 
+
+The firmware is based on Espurna with many things turned off.
+
+
+## SmartThings
+
+### Device Handler
+A device
+
+### SmartApp
+
+### Bridge
+
+
 
 I found some virtual garage door controllers but just could not get them working with the standard push openers in my setup.
 

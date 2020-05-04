@@ -26,15 +26,13 @@ http://docs.smartthings.com/en/latest/capabilities-reference.html
 metadata {
 	definition(
 		name: "Espurna Garage Door Device Handler V2", namespace: "induprakash", author: "Indu Prakash") {
-		capability "Door Control" //attribute=door,commands=open,close
+        capability "Door Control"  //attributes=door(closed,closing,open,opening,unknown),commands=open,close
 		capability "Health Check"
 		capability "Sensor"
 		capability "Refresh"	//command=refresh
 		capability "Relative Humidity Measurement" //attribute=humidity
 		capability "Temperature Measurement" //attribute=temperature
 		
-		attribute "opensensor", "string"
-		attribute "closedsensor", "string"
 		attribute "notify", "string"
 		
 		command "setStatus"
@@ -125,12 +123,6 @@ def setStatus(type, value) {
 	if (type == "door") {
 		sendEvent(name: type, value: value, displayed: true)
 	}
-	else if (type == "opensensor") {
-		sendEvent(name: type, value: value, displayed: false)
-	}
-	else if (type == "closedsensor") {
-		sendEvent(name: type, value: value, displayed: false)
-	}
 	else if (type == "temperature") {
 		sendEvent(name: type, value: value, displayed: true)
 	}
@@ -138,7 +130,7 @@ def setStatus(type, value) {
 		sendEvent(name: type, value: value, displayed: true)
 	}
 	else if (type == "notify") {
-		sendEvent(name: type, value: value, displayed: false)
+		sendEvent(name: type, value: value, displayed: false, isStateChange: true) //No need to display this in the mobile application activity
 	}
 }
 
@@ -148,8 +140,6 @@ def fetchCallback(physicalgraph.device.HubResponse hubResponse) {
 	if (splitted?.size() == 3) {
 		//logDebug "${splitted}"
 		def stateValue = "unknown"
-		def stateOpenSensor = "open"
-		def stateClosedSensor = "open"
 		switch(splitted[0]) {
 			case "1":
 				stateValue = "open"
@@ -168,17 +158,8 @@ def fetchCallback(physicalgraph.device.HubResponse hubResponse) {
 				break
 		}
 		
-		if (splitted[1] == "1") {
-			stateOpenSensor = "closed"
-		}
-		if (splitted[2] == "1") {
-			stateClosedSensor = "closed"
-		}
-		
-		log.info "fetchCallback door=${stateValue} openSensor=${stateOpenSensor} closedSensor=${stateClosedSensor}"
-		sendEvent(name: "door", value: stateValue)	
-		sendEvent(name: "opensensor", value: stateOpenSensor, displayed: false)
-		sendEvent(name: "closedsensor", value: stateClosedSensor, displayed: false)
+		log.info "fetchCallback door=${stateValue}"	//" openSensor=${stateOpenSensor} closedSensor=${stateClosedSensor}"
+		sendEvent(name: "door", value: stateValue)
 	}
 	
 	sendEvent(name: "healthStatus", value: "online", displayed: false)
@@ -203,8 +184,8 @@ def fetchStatus() {
 		sendHubCommand(hubAction)
 	}
 	
-	//Fetch status again every 60 seconds
-	runIn(60, fetchStatus)
+	//Fetch status again every 30 seconds
+	runIn(30, fetchStatus)
 }
 
 //Private stuff
@@ -232,8 +213,7 @@ private initialize() {
 	//The "state" map preserved between device executions	
 	
 	sendEvent(name: "door", value: "unknown", displayed: false)
-	sendEvent(name: "opensensor", value: "", displayed: false)
-	sendEvent(name: "closedsensor", value: "", displayed: false)	
+	sendEvent(name: "notify", value: "", displayed: false)
 	sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false)
 	sendEvent(name: "healthStatus", value: "offline", displayed: false)
 	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme: "untracked"].encodeAsJson(), displayed: false)
@@ -242,7 +222,7 @@ private initialize() {
 
 //Overrides
 def parse(String description) {
-	logDebug "Parse $description"	
+	logDebug "Parse $description"
 }
 def installed() {
 	logDebug "Installed Garage Door"
