@@ -58,7 +58,7 @@ private initialize() {
  */
 def notificationHandler(evt) {
 	log.info "Received ${evt.displayName} ${evt.value}"
-	if (sendMsg) {
+	if (sendMsg && evt.value) {
 		//sendNotification() method allows you to send both push and/or SMS messages, in one convenient method call. It can also optionally display the message in the Notifications feed.
 		sendNotification("${evt.displayName}: ${evt.value}")
 	}
